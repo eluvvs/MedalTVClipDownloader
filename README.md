@@ -7,7 +7,7 @@ If there's any improvements or features you would like to suggest contact me! :)
 
 How to use it?
 
-Go to https://github.com/eluvvs/MedalTVClipDownloader/releases/tag/2.21 (or https://github.com/eluvvs/MedalTVClipDownloader/releases/latest) and download `clipdownloader.exe` 
+Go to https://github.com/eluvvs/MedalTVClipDownloader/releases/tag/2.1.1 (or https://github.com/eluvvs/MedalTVClipDownloader/releases/latest) and download `MedalTV.Clip.Downloader.-.eluvvs.fork.exe` (or `clipdownloader.exe`) 
 ![image](https://github.com/Dessmondd/MedalTVClipDownloader/assets/97458634/362d650f-d1f1-4075-8d3a-82c9bcd3a5bb)
 Once you have done that just copy the URL (or clip ID) of your Medal.TV video that you uploaded (does not matter if the video is public or hidden/unlisted, as long as you got the URL it will work!)
 
@@ -16,10 +16,13 @@ Paste the URL in the input field "Enter the URL of the clip:" and click on "Down
 ![image](https://github.com/Dessmondd/MedalTVClipDownloader/assets/97458634/d019dbf6-2733-4e42-9577-a1657861161a)
 
 
-<h1>Release (2.21)</h1>
+<h1>Release (2.1.1)</h1>
 <ul>
   <li>
   <b>Automatic Clip Title Fetching:</b> No more generic file names! The downloader now automatically pulls the original clip title from Medal.
+  </li>
+  <li>
+  <b>Cleaned Up UI:</b> Removed the obsolete "Check for Updates" button.
   </li>
   <li>
   <b>Remembers Last Folder:</b> Automatically remembers the last directory you saved a clip to.
