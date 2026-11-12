@@ -17,9 +17,21 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        'unittest',
+        'test',
+        'pydoc',
+        'pdb',
+        'doctest',
+        'difflib',
+        'multiprocessing',
+        'curses',
+        'asyncio',
+        'xmlrpc',
+        'sqlite3',
+    ],
     noarchive=False,
-    optimize=0,
+    optimize=1,
 )
 pyz = PYZ(a.pure)
 
@@ -33,7 +45,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,

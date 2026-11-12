@@ -1,21 +1,44 @@
 import os
-import json
-import re
-import html
-import requests
-import tkinter as tk
-from tkinter import filedialog
-from tkinter import ttk
-import customtkinter as ctk
-from tkinter.messagebox import showinfo, showerror
 import sys
 import threading
+import tkinter as tk
+from tkinter import ttk
+import customtkinter as ctk
 
 CONFIG_DIR = os.path.join(os.getenv('APPDATA', os.path.expanduser('~')), 'MedalTVClipDownloader')
 CONFIG_FILE = os.path.join(CONFIG_DIR, 'config.json')
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 }
+
+# Deferred module placeholders to keep launch time instant
+requests = None
+json = None
+re = None
+html = None
+filedialog = None
+showinfo = None
+showerror = None
+
+
+def _load_heavy_modules():
+    """Lazily load network, parsing, and dialog modules in the background or on demand."""
+    global requests, json, re, html, filedialog, showinfo, showerror
+    if requests is None:
+        import requests as _requests
+        import json as _json
+        import re as _re
+        import html as _html
+        from tkinter import filedialog as _filedialog
+        from tkinter.messagebox import showinfo as _showinfo, showerror as _showerror
+
+        requests = _requests
+        json = _json
+        re = _re
+        html = _html
+        filedialog = _filedialog
+        showinfo = _showinfo
+        showerror = _showerror
 
 
 class App:
@@ -24,12 +47,23 @@ class App:
         self.root.title("Clip Downloader :)")
         self.root.geometry("400x200")
         self.root.resizable(False, False)
-        self.last_directory = self.load_last_directory()
+        self._last_directory = None
         self.initUI()
+
+        # Warm up heavy modules in the background while the UI is already visible
+        threading.Thread(target=_load_heavy_modules, daemon=True).start()
+
+    def get_last_directory(self):
+        """Retrieve directory lazily when needed to avoid blocking startup with disk I/O."""
+        if self._last_directory and os.path.isdir(self._last_directory):
+            return self._last_directory
+        self._last_directory = self.load_last_directory()
+        return self._last_directory
 
     def load_last_directory(self):
         try:
             if os.path.exists(CONFIG_FILE):
+                _load_heavy_modules()
                 with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     saved_dir = data.get('last_directory')
@@ -49,8 +83,9 @@ class App:
     def save_last_directory(self, directory):
         if not directory or not os.path.isdir(directory):
             return
-        self.last_directory = directory
+        self._last_directory = directory
         try:
+            _load_heavy_modules()
             os.makedirs(CONFIG_DIR, exist_ok=True)
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 json.dump({'last_directory': directory}, f, indent=4)
@@ -60,6 +95,7 @@ class App:
     def sanitize_filename(self, name):
         if not name:
             return "medal_clip"
+        _load_heavy_modules()
         # Remove characters forbidden in Windows filenames
         cleaned = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '', name)
         # Remove leading/trailing periods and whitespace
@@ -94,6 +130,7 @@ class App:
         threading.Thread(target=self.download_video, daemon=True).start()
 
     def fetch_clip_info(self, raw_input):
+        _load_heavy_modules()
         url = raw_input.strip()
         if not url:
             return None, None
@@ -157,6 +194,7 @@ class App:
         return safe_title, file_url
 
     def download_video(self):
+        _load_heavy_modules()
         input_text = self.url_input.get().strip()
         if not input_text:
             showerror("Error", "Please enter a valid Medal clip URL or ID.")
@@ -174,7 +212,7 @@ class App:
                 return
 
             filename = filedialog.asksaveasfilename(
-                initialdir=self.last_directory,
+                initialdir=self.get_last_directory(),
                 initialfile=f"{clip_title}.mp4",
                 filetypes=[("Video Files", "*.mp4"), ("All Files", "*.*")],
                 defaultextension=".mp4"
@@ -203,10 +241,9 @@ class App:
             self.root.update()
             showinfo("Success", f"File saved successfully:\n{filename}")
 
-        except requests.RequestException as e:
-            showerror("Download Error", f"Failed to download clip: {e}")
         except Exception as e:
-            showerror("Error", f"An unexpected error occurred: {e}")
+            err_type = type(e).__name__
+            showerror("Download Error" if "Request" in err_type else "Error", f"An error occurred: {e}")
         finally:
             self.download_button.configure(state="normal")
 
@@ -224,7 +261,8 @@ class App:
 
 
 if __name__ == '__main__':
+    # Explicitly set dark mode to skip slow OS registry polling during CustomTkinter initialization
+    ctk.set_appearance_mode("Dark")
     root = ctk.CTk()
     window = App(root)
     root.mainloop()
-
