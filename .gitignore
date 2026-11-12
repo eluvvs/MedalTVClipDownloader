@@ -1,3 +1,6 @@
 .venv/
 __pycache__/
 build/
+
+target/
+Cargo.lock
