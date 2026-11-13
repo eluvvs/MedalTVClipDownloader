@@ -392,10 +392,11 @@ impl eframe::App for ClipDownloaderApp {
 
             // URL input row
             ui.horizontal(|ui| {
-                ui.label(egui::RichText::new("Enter the URL of the clip:").size(13.0));
+                ui.label(egui::RichText::new("Enter the URL of the clip:").size(13.0).color(egui::Color32::WHITE));
                 let response = ui.add(
                     egui::TextEdit::singleline(&mut self.url_input)
-                        .hint_text("Paste clip URL or ID...")
+                        .hint_text(egui::RichText::new("Paste clip URL or ID...").color(egui::Color32::from_rgb(0x88, 0x88, 0x88)))
+                        .text_color(egui::Color32::WHITE)
                         .desired_width(190.0),
                 );
                 if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) && !self.is_downloading {
@@ -406,9 +407,12 @@ impl eframe::App for ClipDownloaderApp {
             ui.add_space(8.0);
 
             // Progress bar
-            let progress_bar = egui::ProgressBar::new(self.progress)
-                .show_percentage()
+            let mut progress_bar = egui::ProgressBar::new(self.progress)
+                .rounding(egui::Rounding::same(6.0))
                 .animate(self.is_downloading);
+            if self.progress >= 0.01 {
+                progress_bar = progress_bar.show_percentage();
+            }
             ui.add_sized([ui.available_width(), 20.0], progress_bar);
 
             ui.add_space(10.0);
@@ -419,6 +423,7 @@ impl eframe::App for ClipDownloaderApp {
                     egui::RichText::new("Download Video").color(egui::Color32::WHITE),
                 )
                 .min_size(egui::vec2(180.0, 28.0))
+                .rounding(egui::Rounding::same(8.0))
                 .fill(egui::Color32::from_rgb(0x1f, 0x53, 0x8d));
 
                 if ui.add_enabled(!self.is_downloading, download_btn).clicked() {
@@ -427,9 +432,12 @@ impl eframe::App for ClipDownloaderApp {
 
                 ui.add_space(4.0);
 
-                let exit_btn = egui::Button::new("Exit")
-                    .min_size(egui::vec2(180.0, 26.0))
-                    .fill(egui::Color32::from_rgb(0x42, 0x42, 0x42));
+                let exit_btn = egui::Button::new(
+                    egui::RichText::new("Exit").color(egui::Color32::WHITE),
+                )
+                .min_size(egui::vec2(180.0, 26.0))
+                .rounding(egui::Rounding::same(8.0))
+                .fill(egui::Color32::from_rgb(0x33, 0x33, 0x33));
 
                 if ui.add(exit_btn).clicked() {
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
@@ -494,11 +502,26 @@ fn main() -> Result<(), eframe::Error> {
         "Clip Downloader :)",
         native_options,
         Box::new(|cc| {
-            // Apply matching dark theme (#302f2f)
+            // Apply AMOLED absolute black theme (#000000) with crisp white text
             let mut visuals = egui::Visuals::dark();
-            visuals.panel_fill = egui::Color32::from_rgb(0x30, 0x2f, 0x2f);
-            visuals.window_fill = egui::Color32::from_rgb(0x30, 0x2f, 0x2f);
-            visuals.extreme_bg_color = egui::Color32::from_rgb(0x24, 0x24, 0x24);
+            visuals.panel_fill = egui::Color32::BLACK;
+            visuals.window_fill = egui::Color32::BLACK;
+            visuals.extreme_bg_color = egui::Color32::from_rgb(0x12, 0x12, 0x12);
+            visuals.faint_bg_color = egui::Color32::from_rgb(0x18, 0x18, 0x18);
+            visuals.code_bg_color = egui::Color32::from_rgb(0x12, 0x12, 0x12);
+            visuals.override_text_color = Some(egui::Color32::WHITE);
+
+            // Widget styling for dark background
+            visuals.widgets.noninteractive.bg_fill = egui::Color32::from_rgb(0x1a, 0x1a, 0x1a);
+            visuals.widgets.noninteractive.bg_stroke = egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(0x2e, 0x2e, 0x2e));
+            visuals.widgets.noninteractive.fg_stroke.color = egui::Color32::WHITE;
+            visuals.widgets.noninteractive.rounding = egui::Rounding::same(6.0);
+
+            visuals.widgets.inactive.bg_stroke = egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(0x33, 0x33, 0x33));
+            visuals.widgets.inactive.rounding = egui::Rounding::same(8.0);
+            visuals.widgets.hovered.rounding = egui::Rounding::same(8.0);
+            visuals.widgets.active.rounding = egui::Rounding::same(8.0);
+
             cc.egui_ctx.set_visuals(visuals);
 
             Ok(Box::new(ClipDownloaderApp::default()))
