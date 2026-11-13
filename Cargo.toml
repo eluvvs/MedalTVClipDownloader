@@ -2,6 +2,7 @@
 name = "medal_clip_downloader"
 version = "2.1.2"
 edition = "2021"
+build = "build.rs"
 authors = ["eluvvs <eluvvs@proton.me>"]
 description = "Fast, lightweight Medal.TV clip downloader without watermarks"
 
@@ -14,6 +15,9 @@ regex = "1.10"
 rfd = "0.15"
 dirs = "5.0"
 html-escape = "0.2"
+
+[build-dependencies]
+winres = "0.1"
 
 [profile.release]
 opt-level = 3

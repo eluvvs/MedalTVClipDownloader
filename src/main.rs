@@ -474,12 +474,19 @@ impl ClipDownloaderApp {
 }
 
 fn main() -> Result<(), eframe::Error> {
+    let icon_data = eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).ok();
+    let mut viewport = egui::ViewportBuilder::default()
+        .with_inner_size([400.0, 200.0])
+        .with_resizable(false)
+        .with_maximize_button(false)
+        .with_title("Clip Downloader :)");
+
+    if let Some(icon) = icon_data {
+        viewport = viewport.with_icon(icon);
+    }
+
     let native_options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size([400.0, 200.0])
-            .with_resizable(false)
-            .with_maximize_button(false)
-            .with_title("Clip Downloader :)"),
+        viewport,
         ..Default::default()
     };
 
