@@ -27,6 +27,7 @@ struct ClipDownloaderApp {
     url_input: String,
     progress: f32,
     is_downloading: bool,
+    is_completed: bool,
     status_text: String,
     rx: Option<Receiver<DownloadMessage>>,
     stop_signal: Arc<AtomicBool>,
@@ -38,6 +39,7 @@ impl Default for ClipDownloaderApp {
             url_input: String::new(),
             progress: 0.0,
             is_downloading: false,
+            is_completed: false,
             status_text: String::new(),
             rx: None,
             stop_signal: Arc::new(AtomicBool::new(false)),
@@ -361,19 +363,19 @@ impl eframe::App for ClipDownloaderApp {
                         if p == 0.0 && self.is_downloading {
                             // Cancelled
                             self.is_downloading = false;
+                            self.is_completed = false;
                         }
                     }
-                    DownloadMessage::Success(saved_path) => {
+                    DownloadMessage::Success(_saved_path) => {
                         self.is_downloading = false;
                         self.progress = 1.0;
-                        rfd::MessageDialog::new()
-                            .set_title("Success")
-                            .set_description(&format!("File saved successfully:\n{}", saved_path))
-                            .set_buttons(rfd::MessageButtons::Ok)
-                            .show();
+                        self.is_completed = true;
+                        ctx.send_viewport_cmd(egui::ViewportCommand::RequestUserAttention(egui::UserAttentionType::Critical));
+                        flash_taskbar();
                     }
                     DownloadMessage::Error(err_msg) => {
                         self.is_downloading = false;
+                        self.is_completed = false;
                         self.progress = 0.0;
                         rfd::MessageDialog::new()
                             .set_title("Error")
@@ -410,6 +412,11 @@ impl eframe::App for ClipDownloaderApp {
             let mut progress_bar = egui::ProgressBar::new(self.progress)
                 .rounding(egui::Rounding::same(6.0))
                 .animate(self.is_downloading);
+
+            if self.is_completed {
+                progress_bar = progress_bar.fill(egui::Color32::from_rgb(0x22, 0xc5, 0x5e));
+            }
+
             if self.progress >= 0.01 {
                 progress_bar = progress_bar.show_percentage();
             }
@@ -464,6 +471,7 @@ impl ClipDownloaderApp {
         }
 
         self.is_downloading = true;
+        self.is_completed = false;
         self.progress = 0.0;
         self.status_text = "Fetching clip info...".to_string();
 
@@ -528,3 +536,44 @@ fn main() -> Result<(), eframe::Error> {
         }),
     )
 }
+
+#[cfg(windows)]
+fn flash_taskbar() {
+    use std::ffi::CString;
+
+    #[repr(C)]
+    struct FLASHWINFO {
+        cb_size: u32,
+        hwnd: isize,
+        dw_flags: u32,
+        u_count: u32,
+        dw_timeout: u32,
+    }
+
+    const FLASHW_ALL: u32 = 0x00000003;
+    const FLASHW_TIMERNOFG: u32 = 0x0000000C;
+
+    #[link(name = "user32")]
+    extern "system" {
+        fn FlashWindowEx(pfwi: *const FLASHWINFO) -> i32;
+        fn FindWindowA(lpClassName: *const i8, lpWindowName: *const i8) -> isize;
+    }
+
+    unsafe {
+        let title = CString::new("Clip Downloader :)").unwrap();
+        let hwnd = FindWindowA(std::ptr::null(), title.as_ptr());
+        if hwnd != 0 {
+            let fwi = FLASHWINFO {
+                cb_size: std::mem::size_of::<FLASHWINFO>() as u32,
+                hwnd,
+                dw_flags: FLASHW_ALL | FLASHW_TIMERNOFG,
+                u_count: 0,
+                dw_timeout: 0,
+            };
+            FlashWindowEx(&fwi);
+        }
+    }
+}
+
+#[cfg(not(windows))]
+fn flash_taskbar() {}
